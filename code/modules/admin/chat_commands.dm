@@ -1,4 +1,9 @@
 #define IRC_STATUS_THROTTLE 5
+// discord notes
+// Max length of a single chat message Discords limit is 1970 I think?
+#define CHAT_NOTES_MESSAGE_LENGTH 1800
+// Max length of a single note
+#define CHAT_NOTES_NOTE_LENGTH 1600
 
 /datum/tgs_chat_command/ircstatus
 	name = "status"
@@ -159,4 +164,78 @@ GLOBAL_LIST(round_end_notifiees)
 
 	return "removed [params] from the border whitelist."
 
+/datum/tgs_chat_command/notes
+	name = "notes"
+	help_text = "<ckey> lists all of a players notes"
+
+/datum/tgs_chat_command/notes/Run(datum/tgs_chat_user/sender, params)
+	var/target_ckey = ckey(params)
+	if(!target_ckey)
+		return "Insufficient parameters"
+
+	if(!CONFIG_GET(string/chat_command_notes) || sender.channel.custom_tag != CONFIG_GET(string/chat_command_notes))
+		return "This command is not allowed in this channel."
+
+	if(!SSdbcore.Connect())
+		return "Failed to establish database connection."
+
+	var/datum/DBQuery/query_get_notes = SSdbcore.NewQuery({"
+		SELECT
+			IFNULL((SELECT byond_key FROM [format_table_name("player")] WHERE ckey = adminckey), adminckey),
+			text,
+			timestamp,
+			server,
+			expire_timestamp,
+			severity
+		FROM [format_table_name("messages")]
+		WHERE type = 'note' AND targetckey = :targetckey AND deleted = 0 AND (expire_timestamp > NOW() OR expire_timestamp IS NULL)
+		ORDER BY timestamp DESC
+	"}, list("targetckey" = target_ckey))
+	if(!query_get_notes.warn_execute())
+		qdel(query_get_notes)
+		return "Failed to fetch notes for [target_ckey]."
+
+	var/list/notes = list()
+	while(query_get_notes.NextRow())
+		var/admin_key = query_get_notes.item[1]
+		var/text = replacetext("[query_get_notes.item[2]]", "<br>", "\n")
+		if(length(text) > CHAT_NOTES_NOTE_LENGTH)
+			text = "[copytext(text, 1, CHAT_NOTES_NOTE_LENGTH)]..."
+		text = strip_html_simple(text, CHAT_NOTES_NOTE_LENGTH + 4)
+		var/timestamp = query_get_notes.item[3]
+		var/server = query_get_notes.item[4]
+		var/expire_timestamp = query_get_notes.item[5]
+		var/severity = query_get_notes.item[6] ? LOWER_TEXT("[query_get_notes.item[6]]") : "n/a"
+		notes += "[timestamp] | [server] | [admin_key] | [severity] severity[expire_timestamp ? " | expires [expire_timestamp]" : ""]\n[text]"
+	qdel(query_get_notes)
+
+	log_admin("Chat Notes Check: [sender.friendly_name] viewed the notes of [target_ckey]")
+	if(!length(notes))
+		return "[target_ckey] has no notes."
+
+	// Split the notes to fit notes
+	var/list/messages = list()
+	var/current = "Notes for [target_ckey] ([length(notes)]):"
+	for(var/note in notes)
+		if(length(current) + length(note) + 2 > CHAT_NOTES_MESSAGE_LENGTH)
+			messages += current
+			current = note
+		else
+			current += "\n\n[note]"
+	messages += current
+
+	// Send the message
+	for(var/i in 1 to length(messages) - 1)
+		world.TgsChatBroadcast(new /datum/tgs_message_content(messages[i]), list(sender.channel))
+	return messages[length(messages)]
+
+/// Sends a message to the tagged channel
+/proc/announce_note_change(message)
+	if(CONFIG_GET(string/chat_announce_notes))
+		send2chat(new /datum/tgs_message_content(message), CONFIG_GET(string/chat_announce_notes))
+
+
 #undef IRC_STATUS_THROTTLE
+// discord notes
+#undef CHAT_NOTES_MESSAGE_LENGTH
+#undef CHAT_NOTES_NOTE_LENGTH
