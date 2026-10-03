@@ -239,7 +239,7 @@ GLOBAL_LIST(round_end_notifiees)
 		return "Usage: note_add <ckey> <high|medium|minor|none> <text>"
 	var/target_ckey = ckey(all_params[1])
 	var/note_severity = LOWER_TEXT(all_params[2])
-	var/text = trim(all_params.Copy(3).Join(" "))
+	var/text = trim(jointext(all_params, " ", 3))
 	if(!target_ckey || !text)
 		return "Insufficient parameters"
 	if(!(note_severity in list("high", "medium", "minor", "none")))
