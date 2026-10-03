@@ -108,7 +108,7 @@ GLOBAL_LIST(round_end_notifiees)
 	var/list/text_res = results.Copy(1, 3)
 	var/list/refs = results.len > 3 ? results.Copy(4) : null
 	. = "[text_res.Join("\n")][refs ? "\nRefs: [refs.Join(" ")]" : ""]"
-	
+
 /datum/tgs_chat_command/reload_admins
 	name = "reload_admins"
 	help_text = "Forces the server to reload admins."
@@ -116,7 +116,7 @@ GLOBAL_LIST(round_end_notifiees)
 
 /datum/tgs_chat_command/reload_admins/Run(datum/tgs_chat_user/sender, params)
 	ReloadAsync()
-	log_admin("[sender.friendly_name] reloaded admins via chat command.")
+	log_admin("[chat_sender_name(sender)] reloaded admins via chat command.")
 	return "Admins reloaded."
 
 /datum/tgs_chat_command/reload_admins/proc/ReloadAsync()
@@ -132,15 +132,15 @@ GLOBAL_LIST(round_end_notifiees)
 	params = trim(params)
 	if(!params)
 		return "Insufficient parameters"
-	
+
 	if(sender.channel.custom_tag != CONFIG_GET(string/chat_command_whitelist))
 		return "This command is not allowed in this channel."
 
 	BC_WhitelistKey(params)
-	message_admins("[sender.friendly_name] added [params] to the border whitelist.")
-	log_admin("[sender.friendly_name] added [params] to the border whitelist.")
+	message_admins("[chat_sender_name(sender)] added [params] to the border whitelist.")
+	log_admin("[chat_sender_name(sender)] added [params] to the border whitelist.")
 	if(CONFIG_GET(string/chat_announce_whitelist))
-		send2chat(new /datum/tgs_message_content("[sender.friendly_name] added [params] to the border whitelist via Discord."), CONFIG_GET(string/chat_announce_whitelist))
+		send2chat(new /datum/tgs_message_content("[chat_sender_name(sender)] added [params] to the border whitelist via Discord."), CONFIG_GET(string/chat_announce_whitelist))
 
 	return "added [params] to the border whitelist."
 
@@ -157,10 +157,10 @@ GLOBAL_LIST(round_end_notifiees)
 		return "This command is not allowed in this channel."
 
 	BC_RemoveKey(params)
-	message_admins("[sender.friendly_name] removed [params] from the border whitelist.")
-	log_admin("[sender.friendly_name] removed [params] from the border whitelist.")
+	message_admins("[chat_sender_name(sender)] removed [params] from the border whitelist.")
+	log_admin("[chat_sender_name(sender)] removed [params] from the border whitelist.")
 	if(CONFIG_GET(string/chat_announce_whitelist))
-		send2chat(new /datum/tgs_message_content("[sender.friendly_name] removed [params] from the border whitelist via Discord."), CONFIG_GET(string/chat_announce_whitelist))
+		send2chat(new /datum/tgs_message_content("[chat_sender_name(sender)] removed [params] from the border whitelist via Discord."), CONFIG_GET(string/chat_announce_whitelist))
 
 	return "removed [params] from the border whitelist."
 
@@ -234,6 +234,9 @@ GLOBAL_LIST(round_end_notifiees)
 	if(CONFIG_GET(string/chat_announce_notes))
 		send2chat(new /datum/tgs_message_content(message), CONFIG_GET(string/chat_announce_notes))
 
+// Return name and discord ID
+/proc/chat_sender_name(datum/tgs_chat_user/sender)
+	return "[sender.friendly_name] (Discord ID: [sender.id])"
 
 #undef IRC_STATUS_THROTTLE
 // discord notes
