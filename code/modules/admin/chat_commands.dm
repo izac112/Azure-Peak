@@ -186,7 +186,8 @@ GLOBAL_LIST(round_end_notifiees)
 			timestamp,
 			server,
 			expire_timestamp,
-			severity
+			severity,
+			id
 		FROM [format_table_name("messages")]
 		WHERE type = 'note' AND targetckey = :targetckey AND deleted = 0 AND (expire_timestamp > NOW() OR expire_timestamp IS NULL)
 		ORDER BY timestamp DESC
@@ -198,18 +199,16 @@ GLOBAL_LIST(round_end_notifiees)
 	var/list/notes = list()
 	while(query_get_notes.NextRow())
 		var/admin_key = query_get_notes.item[1]
-		var/text = replacetext("[query_get_notes.item[2]]", "<br>", "\n")
-		if(length(text) > CHAT_NOTES_NOTE_LENGTH)
-			text = "[copytext(text, 1, CHAT_NOTES_NOTE_LENGTH)]..."
-		text = strip_html_simple(text, CHAT_NOTES_NOTE_LENGTH + 4)
+		var/text = note_text_for_chat(query_get_notes.item[2])
 		var/timestamp = query_get_notes.item[3]
 		var/server = query_get_notes.item[4]
 		var/expire_timestamp = query_get_notes.item[5]
 		var/severity = query_get_notes.item[6] ? LOWER_TEXT("[query_get_notes.item[6]]") : "n/a"
-		notes += "[timestamp] | [server] | [admin_key] | [severity] severity[expire_timestamp ? " | expires [expire_timestamp]" : ""]\n[text]"
+		var/id = query_get_notes.item[7]
+		notes += "#[id] | [timestamp] | [server] | [admin_key] | [severity] severity[expire_timestamp ? " | expires [expire_timestamp]" : ""]\n[text]"
 	qdel(query_get_notes)
 
-	log_admin("Chat Notes Check: [sender.friendly_name] viewed the notes of [target_ckey]")
+	log_admin("Chat Notes Check: [chat_sender_name(sender)] viewed the notes of [target_ckey]")
 	if(!length(notes))
 		return "[target_ckey] has no notes."
 
