@@ -1,7 +1,7 @@
 #define IRC_STATUS_THROTTLE 5
 // discord notes
 // Max length of a single chat message Discords limit is 1970 I think?
-#define CHAT_NOTES_MESSAGE_LENGTH 1800
+#define CHAT_NOTES_MESSAGE_LENGTH 1900
 // Max length of a single note
 #define CHAT_NOTES_NOTE_LENGTH 1600
 

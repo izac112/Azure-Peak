@@ -96,7 +96,7 @@
 	qdel(query_create_message)
 	if(logged)
 		if(type == "note")
-			announce_note_change("NOTES: [key_name(usr)] added a [note_severity] severity note for [target_key]")
+			announce_note_change("NOTES: [key_name(usr)] added a [note_severity] severity note for [target_key]: [note_text_for_chat(text)]")
 		log_admin_private(pm)
 		message_admins("[header]:<br>[text]")
 		admin_ticket_log(target_ckey, "<font color='blue'>[header]</font>")
@@ -145,7 +145,7 @@
 		log_admin_private(m1)
 		message_admins(m2)
 		if(type == "note")
-			announce_note_change("NOTES: [user_key_name] deleted a note for [target_key]")
+			announce_note_change("NOTES: [user_key_name] deleted a note for [target_key]: [note_text_for_chat(text)]")
 		if(browse)
 			browse_messages("[type]")
 		else
@@ -196,7 +196,7 @@
 		log_admin_private("[kn] has edited a [type] [(type == "note" || type == "message" || type == "watchlist entry") ? " for [target_key]" : ""] made by [admin_key] from [old_text] to [new_text]")
 		message_admins("[kna] has edited a [type] [(type == "note" || type == "message" || type == "watchlist entry") ? " for [target_key]" : ""] made by [admin_key] from<br>[old_text]<br>to<br>[new_text]")
 		if(type == "note")
-			announce_note_change("NOTES: [kn] edited a note for [target_key] made by [admin_key]")
+			announce_note_change("NOTES: [kn] edited a note for [target_key] made by [admin_key]\nFrom: [note_text_for_chat(old_text, 800)]\nTo: [note_text_for_chat(new_text, 800)]")
 		if(browse)
 			browse_messages("[type]")
 		else
