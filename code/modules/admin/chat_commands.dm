@@ -241,6 +241,11 @@ GLOBAL_LIST(round_end_notifiees)
 		text = "[copytext(text, 1, max_length)]..."
 	return strip_html_simple(text, max_length + 4)
 
+// Return Name and discord ID for use in adminckey
+/proc/chat_sender_ckey(datum/tgs_chat_user/sender)
+	var/id = copytext("[sender.id]", 1, 21)
+	return "[copytext(ckey(sender.friendly_name), 1, 32 - length(id))]-[id]"
+
 // Return name and discord ID
 /proc/chat_sender_name(datum/tgs_chat_user/sender)
 	return "[sender.friendly_name] (Discord ID: [sender.id])"
