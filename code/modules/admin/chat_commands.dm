@@ -164,6 +164,7 @@ GLOBAL_LIST(round_end_notifiees)
 
 	return "removed [params] from the border whitelist."
 
+// Notes commands
 /datum/tgs_chat_command/notes
 	name = "notes"
 	help_text = "<ckey> lists all of a players notes"
@@ -229,6 +230,53 @@ GLOBAL_LIST(round_end_notifiees)
 	return messages[length(messages)]
 
 /// Sends a message to the tagged channel
+/datum/tgs_chat_command/note_remove
+	name = "note_remove"
+	help_text = "<note id> deletes a player note, the id is shown by the notes command"
+
+/datum/tgs_chat_command/note_remove/Run(datum/tgs_chat_user/sender, params)
+	var/message_id = text2num(trim(replacetext(params, "#", "")))
+	if(!message_id)
+		return "Usage: note_remove <note id>"
+
+	if(!CONFIG_GET(string/chat_command_notes) || sender.channel.custom_tag != CONFIG_GET(string/chat_command_notes))
+		return "This command is not allowed in this channel."
+
+	if(!SSdbcore.Connect())
+		return "Failed to establish database connection."
+
+	// Same as delete_message() limited to notes
+	var/datum/DBQuery/query_find_del_message = SSdbcore.NewQuery(
+		"SELECT IFNULL((SELECT byond_key FROM [format_table_name("player")] WHERE ckey = targetckey), targetckey), text FROM [format_table_name("messages")] WHERE id = :id AND type = 'note' AND deleted = 0",
+		list("id" = message_id)
+	)
+	if(!query_find_del_message.warn_execute())
+		qdel(query_find_del_message)
+		return "Failed to look up note #[message_id]."
+	if(!query_find_del_message.NextRow())
+		qdel(query_find_del_message)
+		return "No note with id #[message_id] was found."
+	var/target_key = query_find_del_message.item[1]
+	var/text = query_find_del_message.item[2]
+	qdel(query_find_del_message)
+
+	var/datum/DBQuery/query_del_message = SSdbcore.NewQuery(
+		"UPDATE [format_table_name("messages")] SET deleted = 1, deleted_ckey = :deleted_ckey WHERE id = :id",
+		list("deleted_ckey" = chat_sender_ckey(sender), "id" = message_id)
+	)
+	if(!query_del_message.warn_execute())
+		qdel(query_del_message)
+		return "Failed to delete note #[message_id]."
+	qdel(query_del_message)
+
+	log_admin_private("[chat_sender_name(sender)] has deleted a note for [target_key]: [text]")
+	message_admins("[chat_sender_name(sender)] has deleted a note for [target_key]:<br>[text]")
+	announce_note_change("NOTES: [chat_sender_name(sender)] deleted a note for [target_key]: [note_text_for_chat(text)]")
+
+	return "Deleted note #[message_id] for [target_key]."
+
+//// Procs
+// Sends a message to the tagged channel
 /proc/announce_note_change(message)
 	if(CONFIG_GET(string/chat_announce_notes))
 		send2chat(new /datum/tgs_message_content(message), CONFIG_GET(string/chat_announce_notes))
