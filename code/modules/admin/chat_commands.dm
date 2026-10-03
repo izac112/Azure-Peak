@@ -234,6 +234,13 @@ GLOBAL_LIST(round_end_notifiees)
 	if(CONFIG_GET(string/chat_announce_notes))
 		send2chat(new /datum/tgs_message_content(message), CONFIG_GET(string/chat_announce_notes))
 
+// Makes notes short enough to send to chat
+/proc/note_text_for_chat(text, max_length = CHAT_NOTES_NOTE_LENGTH)
+	text = replacetext("[text]", "<br>", "\n")
+	if(length(text) > max_length)
+		text = "[copytext(text, 1, max_length)]..."
+	return strip_html_simple(text, max_length + 4)
+
 // Return name and discord ID
 /proc/chat_sender_name(datum/tgs_chat_user/sender)
 	return "[sender.friendly_name] (Discord ID: [sender.id])"
