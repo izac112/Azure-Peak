@@ -229,7 +229,57 @@ GLOBAL_LIST(round_end_notifiees)
 		world.TgsChatBroadcast(new /datum/tgs_message_content(messages[i]), list(sender.channel))
 	return messages[length(messages)]
 
-/// Sends a message to the tagged channel
+/datum/tgs_chat_command/note_add
+	name = "note_add"
+	help_text = "<ckey> <high|medium|minor|none> <text> adds a note to a player"
+
+/datum/tgs_chat_command/note_add/Run(datum/tgs_chat_user/sender, params)
+	var/list/all_params = splittext(trim(params), " ")
+	if(length(all_params) < 3)
+		return "Usage: note_add <ckey> <high|medium|minor|none> <text>"
+	var/target_ckey = ckey(all_params[1])
+	var/note_severity = LOWER_TEXT(all_params[2])
+	var/text = trim(all_params.Copy(3).Join(" "))
+	if(!target_ckey || !text)
+		return "Insufficient parameters"
+	if(!(note_severity in list("high", "medium", "minor", "none")))
+		return "Severity must be one of: high, medium, minor, none."
+
+	if(!CONFIG_GET(string/chat_command_notes) || sender.channel.custom_tag != CONFIG_GET(string/chat_command_notes))
+		return "This command is not allowed in this channel."
+
+	if(!SSdbcore.Connect())
+		return "Failed to establish database connection."
+
+	// Same insert as create_message(), notes are always made secret in game too
+	var/datum/DBQuery/query_create_note = SSdbcore.NewQuery({"
+		INSERT INTO [format_table_name("messages")] (type, targetckey, adminckey, text, timestamp, server, server_ip, server_port, round_id, secret, severity)
+		VALUES ('note', :target_ckey, :admin_ckey, :text, :timestamp, :server, INET_ATON(:internet_address), :port, :round_id, 1, :note_severity)
+	"}, list(
+		"target_ckey" = target_ckey,
+		"admin_ckey" = chat_sender_ckey(sender),
+		"text" = text,
+		"timestamp" = SQLtime(),
+		"server" = CONFIG_GET(string/serversqlname),
+		"internet_address" = world.internet_address || "0",
+		"port" = "[world.port]",
+		"round_id" = GLOB.round_id,
+		"note_severity" = note_severity,
+	))
+	if(!query_create_note.warn_execute())
+		qdel(query_create_note)
+		return "Failed to add the note for [target_ckey]."
+	qdel(query_create_note)
+
+	var/header = "[chat_sender_name(sender)] has created a note for [target_ckey]"
+	log_admin_private("[header]: [text]")
+	message_admins("[header]:<br>[text]")
+	admin_ticket_log(target_ckey, "<font color='blue'>[header]</font>")
+	admin_ticket_log(target_ckey, text)
+	announce_note_change("NOTES: [chat_sender_name(sender)] added a [note_severity] severity note for [target_ckey]: [note_text_for_chat(text)]")
+
+	return "Added a [note_severity] severity note for [target_ckey]."
+
 /datum/tgs_chat_command/note_remove
 	name = "note_remove"
 	help_text = "<note id> deletes a player note, the id is shown by the notes command"

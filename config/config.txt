@@ -483,7 +483,7 @@ MINUTE_CLICK_LIMIT 400
 ## Send a message to the chat when a player note is added, edited or deleted
 #CHAT_ANNOUNCE_NOTES notes
 
-## Chat which you are allowed to view player notes from
+## Chat which you are allowed to view, add and remove player notes from
 #CHAT_COMMAND_NOTES notescommand
 
 ## Allow admin hrefs that don't use the new token system, will eventually be removed
