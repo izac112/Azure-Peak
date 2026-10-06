@@ -439,6 +439,9 @@
 /datum/config_entry/string/chat_command_whitelist
 	config_entry_value = null
 
+/datum/config_entry/string/chat_asay
+	config_entry_value = null
+
 /datum/config_entry/string/chat_announce_notes
 	config_entry_value = null
 

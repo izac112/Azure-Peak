@@ -164,6 +164,21 @@ GLOBAL_LIST(round_end_notifiees)
 
 	return "removed [params] from the border whitelist."
 
+/datum/tgs_chat_command/asay
+	name = "asay"
+	help_text = "<message> sends a message to in-game admin chat"
+
+/datum/tgs_chat_command/asay/Run(datum/tgs_chat_user/sender, params)
+	if(!CONFIG_GET(string/chat_asay) || sender.channel.custom_tag != CONFIG_GET(string/chat_asay))
+		return "This command is not allowed in this channel."
+
+	var/msg = emoji_parse(copytext(sanitize(trim(params)), 1, MAX_MESSAGE_LEN))
+	if(!msg)
+		return "Usage: asay <message>"
+
+	log_adminsay("[chat_sender_name(sender)]: [msg]")
+	to_chat(GLOB.admins, "<span class='adminsay'><span class='prefix'>DISCORD:</span> <EM>[chat_sender_name(sender)]</EM>: <font color='#FF4500'><span class='message linkify'>[msg]</span></font></span>")
+
 // Notes commands
 /datum/tgs_chat_command/notes
 	name = "notes"
@@ -346,6 +361,14 @@ GLOBAL_LIST(round_end_notifiees)
 // Return name and discord ID
 /proc/chat_sender_name(datum/tgs_chat_user/sender)
 	return "[sender.friendly_name] (Discord ID: [sender.id])"
+
+// Relays to the asay tagged channel strips html and stops @
+/proc/relay_asay_to_chat(sender_name, msg)
+	if(!CONFIG_GET(string/chat_asay))
+		return
+	msg = html_decode(strip_html_simple("[msg]", MAX_MESSAGE_LEN))
+	msg = replacetext(msg, "@", "@[ascii2text(8203)]")
+	send2chat(new /datum/tgs_message_content("**ASAY:** [sender_name]: [msg]"), CONFIG_GET(string/chat_asay))
 
 #undef IRC_STATUS_THROTTLE
 // discord notes
