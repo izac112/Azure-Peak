@@ -177,7 +177,9 @@ GLOBAL_LIST(round_end_notifiees)
 		return "Usage: asay <message>"
 
 	log_adminsay("[chat_sender_name(sender)]: [msg]")
-	to_chat(GLOB.admins, "<span class='adminsay'><span class='prefix'>DISCORD:</span> <EM>[chat_sender_name(sender)]</EM>: <font color='#FF4500'><span class='message linkify'>[msg]</span></font></span>")
+	log_game("[chat_sender_name(sender)] sent an asay message from Discord: [msg]")
+	to_chat(GLOB.admins, "<span class='adminsay'><span class='prefix'>DISCORD:</span> <EM>[sender.friendly_name]</EM>: <font color='#FF4500'><span class='message linkify'>[msg]</span></font></span>")
+	return "Sent to asay."
 
 // Notes commands
 /datum/tgs_chat_command/notes
